@@ -29,7 +29,8 @@ library(reticulate)
 library(kableExtra)
 ```
 
-## Python modules 
+Python modules:
+
 ```{r}
 # py_install("numpy")
 # py_install("pandas")
@@ -47,11 +48,13 @@ from scipy import stats
 Sample from a mixture of Weibulls. 
 
 ```{r}
-p1_shape1 <- 1
+p1_shape1 <- .7
 p2_shape2 <- 5
 p3_mix_prop_1 <- .8
 p4_mix_prop_2 <- 1 - p3_mix_prop_1
-p5_sample_n <- 1000
+p5_sample_n <- 300
+p6_scale1 <- 1
+p7_scale2 <- 2
 
 
 df <- tibble(id = 1:p5_sample_n, 
@@ -60,7 +63,8 @@ df <- tibble(id = 1:p5_sample_n,
                                              p4_mix_prop_2), 
                                   shape = c(p1_shape1,
                                             p2_shape2), 
-                                  scale = c(1, 1)))
+                                  scale = c(p6_scale1,
+                                            p7_scale2)))
 
 df %>% 
    ggplot(aes(x = x1_mix)) + 
@@ -76,7 +80,7 @@ df %>%
 
 ## fitdistrplus 
 ```{r}
-fit <- fitdist(df$x_mix, "weibull")
+fit <- fitdist(df$x1_mix, "weibull")
 
 fitshape <- fit$estimate[1]
 fitscale <- fit$estimate[2]
@@ -106,10 +110,9 @@ df2 %>%
               colour = var)) + 
    stat_ecdf() + 
    labs(title = "Comparing CDFs",
-        subtitle = sprintf("Shape 1: %f  \nShape 2: %f  \nMix prop: %f", 
-                           p1_shape1, 
-                           p2_shape2, 
-                           p3_mix_prop_1))
+        subtitle = sprintf("fitted shape: %f  \nfitted scale: %f", 
+                           fitshape, 
+                           fitscale))
    
 ```
 
@@ -137,6 +140,12 @@ df3 <-
           constrain_a_loc = py$fit_py3) %>%  
    unnest(no_constraint, constrain_a, constrain_a_loc)
 
-df3 %>% kable()
+df3 %>% 
+   kable() %>% 
+   kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
 ```
 
