@@ -24,6 +24,22 @@ library(tidyverse)
 library(DT)
 library(fitdistrplus)
 library(mixtools)
+library(here)
+library(reticulate)
+library(kableExtra)
+```
+
+## Python modules 
+```{r}
+# py_install("numpy")
+# py_install("pandas")
+# py_install("scipy")
+```
+
+```{python}
+import numpy as np
+import pandas as pd 
+from scipy import stats 
 ```
 
 
@@ -56,16 +72,18 @@ df %>%
                            p3_mix_prop_1))
 ```
 
+# Distribution fitting
 
-# Distribution fitting 
+## fitdistrplus 
 ```{r}
-fit <- fitdist(df$x, "weibull")
+fit <- fitdist(df$x_mix, "weibull")
 
 fitshape <- fit$estimate[1]
 fitscale <- fit$estimate[2]
 ```
 
-# Comparing CDFs
+Comparing CDFs: 
+
 First sample from the fitted dist: 
 ```{r}
 x2_single <- rweibull(p5_sample_n,
@@ -87,7 +105,38 @@ df2 %>%
    ggplot(aes(x = value, 
               colour = var)) + 
    stat_ecdf() + 
-   labs(title = "Comparing CDFs")
+   labs(title = "Comparing CDFs",
+        subtitle = sprintf("Shape 1: %f  \nShape 2: %f  \nMix prop: %f", 
+                           p1_shape1, 
+                           p2_shape2, 
+                           p3_mix_prop_1))
    
+```
+
+
+## scipy.stats 
+```{python}
+df_py = r.df
+x = np.array(df_py['x1_mix'])
+
+# no constraints: 
+fit_py1 = stats.exponweib.fit(x)
+
+# constrain a=1
+fit_py2 = stats.exponweib.fit(x, f0=1)
+
+# constrain a=1 and loc=0
+fit_py3 = stats.exponweib.fit(x, f0=1, floc=0)
+```
+
+```{r}
+df3 <- 
+   tibble(params = c("a", "shape/c", "loc", "scale"), 
+          no_constraint = py$fit_py1, 
+          constrain_a = py$fit_py2, 
+          constrain_a_loc = py$fit_py3) %>%  
+   unnest(no_constraint, constrain_a, constrain_a_loc)
+
+df3 %>% kable()
 ```
 
