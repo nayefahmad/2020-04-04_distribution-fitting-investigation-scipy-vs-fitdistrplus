@@ -1,0 +1,93 @@
+---
+title: "Distribution fitting investigation"
+author: "Nayef Ahmad"
+date: "4/4/2020"
+output: 
+   html_document: 
+     keep_md: yes
+     code_folding: hide
+     toc: true
+     toc_float:
+       collapsed: false
+     toc_folding: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+# Libraries
+```{r}
+library(tidyverse)
+library(DT)
+library(fitdistrplus)
+library(mixtools)
+```
+
+
+# Data
+Sample from a mixture of Weibulls. 
+
+```{r}
+p1_shape1 <- 1
+p2_shape2 <- 5
+p3_mix_prop_1 <- .8
+p4_mix_prop_2 <- 1 - p3_mix_prop_1
+p5_sample_n <- 1000
+
+
+df <- tibble(id = 1:p5_sample_n, 
+             x1_mix = rweibullmix(p5_sample_n,
+                                  lambda = c(p3_mix_prop_1, 
+                                             p4_mix_prop_2), 
+                                  shape = c(p1_shape1,
+                                            p2_shape2), 
+                                  scale = c(1, 1)))
+
+df %>% 
+   ggplot(aes(x = x1_mix)) + 
+   geom_density() + 
+   labs(title = "Mixture of Weibulls", 
+        subtitle = sprintf("Shape 1: %f  \nShape 2: %f  \nMix prop: %f", 
+                           p1_shape1, 
+                           p2_shape2, 
+                           p3_mix_prop_1))
+```
+
+
+# Distribution fitting 
+```{r}
+fit <- fitdist(df$x, "weibull")
+
+fitshape <- fit$estimate[1]
+fitscale <- fit$estimate[2]
+```
+
+# Comparing CDFs
+First sample from the fitted dist: 
+```{r}
+x2_single <- rweibull(p5_sample_n,
+                      fitshape, 
+                      fitscale)
+```
+
+Then rearrange data and plot: 
+
+```{r}
+df2 <- 
+   df %>% 
+   mutate(x2_single = x2_single) %>% 
+   gather(key = "var", 
+          value = "value", 
+          -id)
+   
+df2 %>% 
+   ggplot(aes(x = value, 
+              colour = var)) + 
+   stat_ecdf() + 
+   labs(title = "Comparing CDFs")
+   
+```
+
